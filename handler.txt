@@ -1,0 +1,37 @@
+创建handler的过程
+public Handler(Looper looper) {
+        this(looper, null, false);
+ }
+问题一：handler与looper是如何创建的，他们之间有什么关系？
+1.handler构造函数需要looper，所以先创建looper。
+2.如何创建looper，由于looper的构造函数是私有的，所以创建它只能通过looper.prepare（），looper有个静态变量threadlocal，它把创建的looper的对象，set为自己的属性，待需要looper对象时，通过它get。looper的构造函数初始化创建了MessageQueue对象。
+3.looper的创建不依赖handler，它反而与ThreadLocal关系更亲密。但他俩经常需要配合使用。
+4.调用handler对象时可以不需要传looper进来，直接调空参也是可以的。这种更推荐，但前提是，在new handler（）之前，你必须调用Looper.prepare.这个方法将当前线程初始化为轮询线程，它不仅创建了looper对象，还把looper对象存进了公共静态变量threadLocal中。
+4.最后提一点，要让创建hander的线程一直接受消息，别忘了Looper.loop()
+
+
+问题二：handler如何与messageQueue关联？
+1.handler初始化已经创建了looper对象，而messageQueue在looper中已经创建了。所以只要在handler中创建一个messageQueue成员变量，将looer的消息队列对象赋值给handler中的messageQueue中就行。
+2.从这里可以看出，handler发送消息到消息队列，这个消息队列也是looper中的消息队列。handler与looper的拥有不同的引用但都指向同一个messageQueue.
+
+
+
+
+名词解释：
+ThreadLocal：只要线程是活动的并且它的ThreadLocal实例可以访问，那么每个线程都持有线程本地变量副本的隐式引用。
+Looper：为一个线程进行消息轮询。这是创建轮询线程的例子：
+class LooperThread extend Thread{
+	public Handler mHandler;
+	public void run(){
+		Looper.prepare();
+		mHandler  = new Handler(){
+			public void handlerMessage(Message msg){
+				.//
+			}
+		}
+		Looper.loop();
+	}
+}
+
+
+
